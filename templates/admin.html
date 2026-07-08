@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joe Finch — Collector Relationship Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='assets/images/favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='assets/images/apple-touch-icon.png') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" integrity="sha512-GEbycr4U5Vns76vTB4TKi3Uecq1mS16c14175zspJ65961s2c1d8T5G7J1T27yOva28U21xXg2hB2QdZ1K26lg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        .tab-link {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: var(--font-ui);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            padding: 0.8rem 0;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: var(--transition-smooth);
+            font-weight: 500;
+        }
+        .tab-link:hover {
+            color: var(--text-primary);
+        }
+        .tab-link.active {
+            color: var(--text-primary);
+            border-bottom-color: var(--text-primary);
+        }
+        .tab-content-pane {
+            display: none;
+            width: 100%;
+        }
+        .tab-content-pane.active {
+            display: block;
+            animation: fadeIn 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+        .entity-grid-item {
+            background: rgba(32, 41, 51, 0.4);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .activity-item {
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+            font-size: 0.85rem;
+        }
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="admin-navbar">
+        <div class="admin-brand">
+            <img src="{{ url_for('static', filename='assets/images/logo.png') }}" alt="JOE FINCH" class="admin-logo" onerror="this.style.display='none'; document.getElementById('admin-brand-text').style.display='block';">
+            <h1 id="admin-brand-text" style="display: none; font-family: var(--font-heading); font-size: 1.3rem; letter-spacing: 0.15em; margin: 0;">JOE FINCH</h1>
+            <div style="font-family: var(--font-ui); font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-secondary); border-left: 1px solid var(--border-color); padding-left: 0.75rem; margin-left: 0.75rem;" class="hide-mobile">Collectors</div>
+        </div>
+        <div class="admin-actions">
+            <button id="btn-show-qr" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.7rem;">QR Code</button>
+            <button id="btn-add-collector" class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-size: 0.7rem;">+ Register Collector</button>
+            <button id="btn-logout" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.7rem; border-color: transparent;">Logout</button>
+        </div>
+    </nav>
+
+    <!-- Flat Tab Navigation Subbar -->
+    <div style="display: flex; gap: 2rem; padding: 0 2.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(26, 33, 41, 0.4); overflow-x: auto; white-space: nowrap; margin-bottom: 1rem;">
+        <button class="tab-link active" data-tab="pane-dashboard">Dashboard</button>
+        <button class="tab-link" data-tab="pane-collectors">Collectors</button>
+        <button class="tab-link" data-tab="pane-artwork">Artwork Library</button>
+        <button class="tab-link" data-tab="pane-events">Events</button>
+        <button class="tab-link" data-tab="pane-staff">Staff</button>
+    </div>
+
+    <!-- Main Views Container -->
+    <div class="container" style="max-width: 1400px; padding: 0.5rem 2.5rem 2.5rem 2.5rem; width: 100%; display: flex; flex-direction: column; flex: 1;">
+        
+        <!-- ================================================================== -->
+        <!-- 1. DASHBOARD VIEW                                                  -->
+        <!-- ================================================================== -->
+        <div id="pane-dashboard" class="tab-content-pane active">
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Collectors</div>
+                    <div id="dash-stat-total" class="stat-value">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Pending Follow-up</div>
+                    <div id="dash-stat-pending" class="stat-value">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Interested in Artworks</div>
+                    <div id="dash-stat-interests" class="stat-value">—</div>
+                </div>
+            </div>
+
+            <div class="admin-main" style="padding: 0; display: grid; gap: 2rem; width: 100%;">
+                <div style="display: grid; grid-template-columns: 1fr; gap: 2rem; width: 100%;">
+                    <!-- Left: Upcoming followups -->
+                    <div class="card" style="padding: 2rem;">
+                        <h2 style="font-size: 1rem; margin-bottom: 1.5rem; letter-spacing: 0.1em;">Upcoming Follow-ups</h2>
+                        <div id="dashboard-followups" style="max-height: 350px; overflow-y: auto;">
+                            <!-- Inserted dynamically -->
+                            <div class="empty-state">No upcoming follow-ups.</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right: Recent collectors -->
+                    <div class="card" style="padding: 2rem;">
+                        <h2 style="font-size: 1rem; margin-bottom: 1.5rem; letter-spacing: 0.1em;">Recent Activity</h2>
+                        <div id="dashboard-recent" style="max-height: 350px; overflow-y: auto;">
+                            <!-- Inserted dynamically -->
+                            <div class="empty-state">No recent collectors.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- 2. COLLECTORS DIRECTORY VIEW                                       -->
+        <!-- ================================================================== -->
+        <div id="pane-collectors" class="tab-content-pane">
+            <div class="admin-main" style="padding: 0; display: grid; width: 100%; gap: 2rem;">
+                <!-- Left Side: Directory, Search, Filters -->
+                <div id="list-section" class="list-section">
+                    <!-- Search and Filter Bar -->
+                    <div class="search-filter-section" style="margin-bottom: 1.5rem;">
+                        <div class="search-box-wrapper">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input type="text" id="search-input" placeholder="Search by name, email, interest, action or notes...">
+                        </div>
+                    </div>
+                    
+                    <!-- Relational Filters Bar -->
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <div class="select-wrapper" style="min-width: 150px; flex: 1;">
+                            <select id="filter-artwork" style="padding: 0.5rem; font-size: 0.75rem;">
+                                <option value="">Filter by Artwork</option>
+                            </select>
+                        </div>
+                        <div class="select-wrapper" style="min-width: 150px; flex: 1;">
+                            <select id="filter-event" style="padding: 0.5rem; font-size: 0.75rem;">
+                                <option value="">Filter by Event</option>
+                            </select>
+                        </div>
+                        <div class="select-wrapper" style="min-width: 150px; flex: 1;">
+                            <select id="filter-staff" style="padding: 0.5rem; font-size: 0.75rem;">
+                                <option value="">Filter by Staff</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <div class="filter-tags">
+                            <button class="filter-tag active" data-status="all">All Statuses</button>
+                            <button class="filter-tag" data-status="New">New</button>
+                            <button class="filter-tag" data-status="Active">Active</button>
+                            <button class="filter-tag" data-status="Contacted">Contacted</button>
+                            <button class="filter-tag" data-status="Inactive">Inactive</button>
+                        </div>
+                        <div>
+                            <a href="/api/export" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 0.5rem; border-radius: var(--radius-sm);">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                Export CSV
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Collectors List Card -->
+                    <div class="collectors-list-card card">
+                        <div class="collector-table-header">
+                            <div>Collector</div>
+                            <div class="hide-mobile">Artwork Interest</div>
+                            <div class="hide-mobile">Registered On</div>
+                            <div>Follow-Up</div>
+                        </div>
+                        <div id="collectors-container" class="collector-rows-container">
+                            <div class="empty-state">Loading collectors...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side: Detail View Panel -->
+                <div id="detail-panel" class="details-panel-card card" style="display: none;">
+                    <div class="show-mobile mb-2">
+                        <button id="btn-back-to-list" class="btn btn-secondary" style="width: 100%; padding: 0.5rem 1rem; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                            Back to List
+                        </button>
+                    </div>
+                    <div class="detail-header">
+                        <h2 id="detail-name" class="detail-title">—</h2>
+                        <div id="detail-date-label" class="detail-subtitle">Met on —</div>
+                    </div>
+
+                    <div class="detail-section">
+                        <div class="detail-section-title">Contact Information</div>
+                        <div class="meta-field">
+                            <span class="meta-field-label">Email</span>
+                            <a href="" id="detail-email" class="meta-field-value">—</a>
+                        </div>
+                        <div class="meta-field">
+                            <span class="meta-field-label">Phone</span>
+                            <span id="detail-phone" class="meta-field-value">—</span>
+                        </div>
+                        <div class="meta-field">
+                            <span class="meta-field-label">Source</span>
+                            <span id="detail-source" class="meta-field-value">—</span>
+                        </div>
+                    </div>
+
+                    <div id="detail-story-section" class="detail-section" style="display: none;">
+                        <div class="detail-section-title">Connection Narrative</div>
+                        <div id="detail-story" class="detail-content detail-story">—</div>
+                    </div>
+
+                    <!-- Relational Selection & Edits -->
+                    <div class="detail-section">
+                        <div class="detail-section-title">Relationship Parameters</div>
+                        
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="edit-interest-level" class="form-label">Interest Level</label>
+                            <div class="select-wrapper">
+                                <select id="edit-interest-level">
+                                    <option value="Curious">Curious</option>
+                                    <option value="Interested">Interested</option>
+                                    <option value="High">High</option>
+                                    <option value="Very High">Very High</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="edit-status" class="form-label">Status</label>
+                            <div class="select-wrapper">
+                                <select id="edit-status">
+                                    <option value="New">New</option>
+                                    <option value="Active">Active</option>
+                                    <option value="Contacted">Contacted</option>
+                                    <option value="Inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="edit-artwork" class="form-label">Artwork Interest</label>
+                            <div class="select-wrapper">
+                                <select id="edit-artwork">
+                                    <option value="">Select Artwork</option>
+                                    <!-- Options inserted dynamically -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="edit-event" class="form-label">Met at Event</label>
+                            <div class="select-wrapper">
+                                <select id="edit-event">
+                                    <option value="">Select Event</option>
+                                    <!-- Options inserted dynamically -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="edit-staff" class="form-label">Assigned Staff</label>
+                            <div class="select-wrapper">
+                                <select id="edit-staff">
+                                    <option value="">Select Staff Member</option>
+                                    <!-- Options inserted dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <div class="detail-section-title">Follow-up Coordination</div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="edit-followup-status" class="form-label">Follow-up Status</label>
+                            <div class="select-wrapper">
+                                <select id="edit-followup-status">
+                                    <option value="none">No Follow-up</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="done">Completed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="edit-followup-date" class="form-label">Target Date</label>
+                            <input type="date" id="edit-followup-date" class="form-control" style="color: var(--text-primary);">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="edit-next-action" class="form-label">Next Action</label>
+                            <input type="text" id="edit-next-action" class="form-control" placeholder="e.g. Schedule studio visit">
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <div class="detail-section-title">Internal Conversation Notes</div>
+                        <div class="notes-editor-container">
+                            <textarea id="edit-notes" class="form-control" placeholder="Conversation notes..."></textarea>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button id="btn-save-details" class="btn btn-primary" style="flex: 1; padding: 0.6rem; font-size: 0.75rem;">Save Changes</button>
+                        <button id="btn-delete-collector" class="btn btn-secondary" style="color: var(--error-color); border-color: var(--error-color); padding: 0.6rem 1rem; font-size: 0.75rem;" title="Delete Record">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Initial Placeholder for Detail View -->
+                <div id="detail-panel-placeholder" class="details-panel-card card mobile-hidden" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; color: var(--text-muted); text-align: center; border-style: dashed; border-width: 1px; border-color: rgba(255,255,255,0.08);">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1.5rem; opacity: 0.4;">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    <p style="font-style: italic; font-size: 0.85rem;">Select a collector from the list to view their relationship card, update story details, or coordinate follow-up schedules.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- 3. ARTWORK LIBRARY VIEW                                            -->
+        <!-- ================================================================== -->
+        <div id="pane-artwork" class="tab-content-pane">
+            <div class="admin-main" style="padding: 0; display: grid; gap: 2rem;">
+                <!-- Left: List -->
+                <div class="card">
+                    <h2 style="font-size: 1rem; margin-bottom: 1.5rem; letter-spacing: 0.15em;">Active Artworks</h2>
+                    <div id="artwork-list-container" style="max-height: 500px; overflow-y: auto;">
+                        <div class="empty-state">No artworks registered.</div>
+                    </div>
+                </div>
+                
+                <!-- Right: Add Form -->
+                <div class="card">
+                    <h2 style="font-size: 1rem; margin-bottom: 1.5rem; letter-spacing: 0.15em;">Add Artwork</h2>
+                    <form id="artwork-add-form" novalidate>
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="art-title" class="form-label">Title</label>
+                            <input type="text" id="art-title" class="form-control" placeholder="e.g. Alien Invasion" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="art-category" class="form-label">Category</label>
+                            <input type="text" id="art-category" class="form-control" placeholder="e.g. Painting, Mixed Media">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="art-price" class="form-label">Price (€, Optional)</label>
+                            <input type="number" id="art-price" class="form-control" placeholder="e.g. 22500">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="art-availability" class="form-label">Availability</label>
+                            <div class="select-wrapper">
+                                <select id="art-availability">
+                                    <option value="Available" selected>Available</option>
+                                    <option value="Adopted">Adopted</option>
+                                    <option value="Sold">Sold</option>
+                                    <option value="Reserved">Reserved</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Add Artwork</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- 4. EVENTS VIEW                                                     -->
+        <!-- ================================================================== -->
+        <div id="pane-events" class="tab-content-pane">
+            <div class="admin-main" style="padding: 0; display: grid; gap: 2rem;">
+                <div class="card">
+                    <h2 style="font-size: 1rem; margin-bottom: 1.5rem; letter-spacing: 0.15em;">Exhibitions & Events</h2>
+                    <div id="events-list-container" style="max-height: 500px; overflow-y: auto; margin-bottom: 2rem;">
+                        <div class="empty-state">No events registered.</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2 style="font-size: 1rem; margin-bottom: 1.5rem; letter-spacing: 0.15em;">Create Event</h2>
+                    <form id="event-add-form" novalidate>
+                        <div class="form-group">
+                            <label for="event-name" class="form-label">Event Name</label>
+                            <input type="text" id="event-name" class="form-control" placeholder="e.g. Art Rotterdam 2026" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Create Event</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- 5. STAFF VIEW                                                      -->
+        <!-- ================================================================== -->
+        <div id="pane-staff" class="tab-content-pane">
+            <div class="admin-main" style="padding: 0; display: grid; gap: 2rem;">
+                <div class="card">
+                    <h2 style="font-size: 1rem; margin-bottom: 1.5rem; letter-spacing: 0.15em;">Exhibition Team</h2>
+                    <div id="staff-list-container" style="max-height: 500px; overflow-y: auto; margin-bottom: 2rem;">
+                        <div class="empty-state">No team members registered.</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2 style="font-size: 1rem; margin-bottom: 1.5rem; letter-spacing: 0.15em;">Add Team Member</h2>
+                    <form id="staff-add-form" novalidate>
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="staff-name" class="form-label">Name</label>
+                            <input type="text" id="staff-name" class="form-control" placeholder="e.g. Sarah" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="staff-email" class="form-label">Email</label>
+                            <input type="email" id="staff-email" class="form-control" placeholder="sarah@example.com">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Add Member</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- MODAL: ADD COLLECTOR DIRECTLY                                      -->
+    <!-- ================================================================== -->
+    <div id="modal-add" class="modal-overlay">
+        <div class="modal-content card" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h2 style="font-size: 1.1rem; margin: 0; letter-spacing: 0.1em;">Register Collector</h2>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            
+            <div id="modal-add-duplicate-warning" class="card" style="display: none; background: rgba(212,175,55,0.08); padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid rgba(212,175,55,0.25);">
+                <p style="font-size: 0.85rem; color: var(--accent-gold); margin-bottom: 1rem;" id="duplicate-warning-text"></p>
+                <div style="display: flex; gap: 1rem;">
+                    <button id="btn-duplicate-override" class="btn btn-primary" style="padding: 0.4rem 1rem; font-size: 0.7rem; border-color: var(--accent-gold); background: var(--accent-gold); color: #1a2129;">Save Anyway</button>
+                    <button id="btn-duplicate-cancel" class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.7rem;">Cancel</button>
+                </div>
+            </div>
+
+            <form id="admin-add-form" novalidate>
+                <div style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="add-name" class="form-label">Full Name</label>
+                        <input type="text" id="add-name" class="form-control" placeholder="Enter collector name" required>
+                        <div id="add-error-name" class="text-error" style="display: none;">Name is required.</div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="add-email" class="form-label">Email Address (Optional)</label>
+                        <input type="email" id="add-email" class="form-control" placeholder="collector@example.com">
+                        <div id="add-error-email" class="text-error" style="display: none;">A valid email is required.</div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="add-phone" class="form-label">Phone Number</label>
+                        <input type="tel" id="add-phone" class="form-control" placeholder="+31 6 12345678" required>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 0.5rem;" class="hide-mobile">
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="add-interest-level" class="form-label">Interest Level</label>
+                        <div class="select-wrapper">
+                            <select id="add-interest-level">
+                                <option value="Curious">Curious</option>
+                                <option value="Interested" selected>Interested</option>
+                                <option value="High">High</option>
+                                <option value="Very High">Very High</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="add-status" class="form-label">Status</label>
+                        <div class="select-wrapper">
+                            <select id="add-status">
+                                <option value="New">New</option>
+                                <option value="Active" selected>Active</option>
+                                <option value="Contacted">Contacted</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="show-mobile" style="display: none;">
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="add-interest-level-mobile" class="form-label">Interest Level</label>
+                        <div class="select-wrapper">
+                            <select id="add-interest-level-mobile">
+                                <option value="Curious">Curious</option>
+                                <option value="Interested" selected>Interested</option>
+                                <option value="High">High</option>
+                                <option value="Very High">Very High</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="add-status-mobile" class="form-label">Status</label>
+                        <div class="select-wrapper">
+                            <select id="add-status-mobile">
+                                <option value="New">New</option>
+                                <option value="Active" selected>Active</option>
+                                <option value="Contacted">Contacted</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="add-artwork" class="form-label">Artwork Interest</label>
+                    <div class="select-wrapper">
+                        <select id="add-artwork">
+                            <option value="" selected>Select Artwork</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;" class="hide-mobile">
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="add-event" class="form-label">Exhibition Event</label>
+                        <div class="select-wrapper">
+                            <select id="add-event">
+                                <option value="" selected>Select Event</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="add-staff" class="form-label">Assigned Staff</label>
+                        <div class="select-wrapper">
+                            <select id="add-staff">
+                                <option value="" selected>Select Team Member</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="show-mobile" style="display: none;">
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="add-event-mobile" class="form-label">Exhibition Event</label>
+                        <div class="select-wrapper">
+                            <select id="add-event-mobile">
+                                <option value="" selected>Select Event</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="add-staff-mobile" class="form-label">Assigned Staff</label>
+                        <div class="select-wrapper">
+                            <select id="add-staff-mobile">
+                                <option value="" selected>Select Team Member</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;" class="hide-mobile">
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="add-followup-date" class="form-label">Follow-up Date</label>
+                        <input type="date" id="add-followup-date" class="form-control">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="add-next-action" class="form-label">Next Action</label>
+                        <input type="text" id="add-next-action" class="form-control" placeholder="e.g. Schedule Studio Visit">
+                    </div>
+                </div>
+
+                <div class="show-mobile" style="display: none;">
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="add-followup-date-mobile" class="form-label">Follow-up Date</label>
+                        <input type="date" id="add-followup-date-mobile" class="form-control">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="add-next-action-mobile" class="form-label">Next Action</label>
+                        <input type="text" id="add-next-action-mobile" class="form-control" placeholder="e.g. Schedule Studio Visit">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="add-story" class="form-label">Personal Story</label>
+                    <textarea id="add-story" class="form-control" placeholder="Story or context shared by the visitor..."></textarea>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label for="add-notes" class="form-label">Private Conversation Notes</label>
+                    <textarea id="add-notes" class="form-control" placeholder="Pricing, frame options, next contact guidelines..."></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="btn btn-secondary btn-close-modal" style="flex: 1; padding: 0.6rem;">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 1; padding: 0.6rem;">Register</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- MODAL: QR CODE DISPLAY                                             -->
+    <!-- ================================================================== -->
+    <div id="modal-qr" class="modal-overlay">
+        <div class="modal-content card" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2 style="font-size: 1.1rem; margin: 0; letter-spacing: 0.1em;">Exhibition Sign-Up QR</h2>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <div class="qr-modal-body">
+                <p class="mb-2" style="font-size: 0.8rem;">Present this QR code to visitors at the stand so they can register their contact details and stories directly on their own devices.</p>
+                <div class="qr-code-container">
+                    <div id="qr-canvas-placeholder"></div>
+                </div>
+                <div class="qr-code-url" id="qr-display-url">Loading URL...</div>
+            </div>
+            <div style="text-align: center; margin-top: 1rem;">
+                <button class="btn btn-secondary btn-close-modal" style="padding: 0.6rem 2rem;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+</body>
+</html>

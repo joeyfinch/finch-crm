@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joe Finch — Connect</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='assets/images/favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='assets/images/apple-touch-icon.png') }}">
+</head>
+<body>
+    <div class="signup-wrapper">
+        <header class="brand-header animate-fade-in">
+            <img src="{{ url_for('static', filename='assets/images/logo.png') }}" alt="JOE FINCH" class="brand-logo" onerror="this.style.display='none'; document.getElementById('brand-logo-text').style.display='block';">
+            <h1 id="brand-logo-text" style="display: none; font-family: var(--font-heading); font-size: 2rem; letter-spacing: 0.2em; margin-bottom: 0.5rem;">JOE FINCH</h1>
+            <div class="brand-subtitle">Future Collectors</div>
+        </header>
+
+        <main class="signup-card card animate-fade-in" style="animation-delay: 0.1s;">
+            <!-- Form State -->
+            <div id="signup-form-state">
+                <div class="signup-intro">
+                    <h2 id="signup-title-text">Remember the<br>Moment</h2>
+                    <p>“A visitor is not a lead. A visitor is a future collector.”</p>
+                </div>
+
+                <div id="signup-error" class="text-error mb-2" style="display: none; text-align: center;">Connection failed. Please try again.</div>
+                <form id="collector-signup-form" novalidate>
+                    <div class="form-group">
+                        <label for="name" class="form-label">Full Name</label>
+                        <input type="text" id="name" name="name" class="form-control" placeholder="Enter your name" required autocomplete="name">
+                        <div id="error-name" class="text-error" style="display: none;">Please share your name.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email Address (Optional)</label>
+                        <input type="email" id="email" name="email" class="form-control" placeholder="Enter your email" autocomplete="email">
+                        <div id="error-email" class="text-error" style="display: none;">Please share a valid email address.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone" class="form-label">Phone Number</label>
+                        <input type="tel" id="phone" name="phone" class="form-control" placeholder="Enter your number" required autocomplete="tel">
+                        <div id="error-phone" class="text-error" style="display: none;">Please share your phone number.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="artwork_interest" class="form-label">Artwork Interest</label>
+                        <div class="select-wrapper">
+                            <select id="artwork_interest" name="artwork_interest">
+                                <option value="" selected>Select artwork or interest level</option>
+                                <option value="Alien Invasion — Haarlem (2025)">Alien Invasion — Haarlem (2025)</option>
+                                <option value="Adopt a Finch Series">Adopt a Finch (Monthly Adoption)</option>
+                                <option value="The Bleaching Grounds">The Bleaching Grounds (After Ruisdael)</option>
+                                <option value="Studio Visit Request">Request a Studio Visit</option>
+                                <option value="General Collection Interest">General Collection Interest</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="story" class="form-label">What moved you today?</label>
+                        <textarea id="story" name="story" class="form-control" placeholder="Which artwork connected with you? What story did you tell? Or simply share your thoughts..."></textarea>
+                    </div>
+
+                    <div class="form-group" style="display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem;">
+                        <input type="checkbox" id="schedule_followup" name="schedule_followup" style="accent-color: var(--accent-gold); width: 18px; height: 18px; cursor: pointer;">
+                        <label for="schedule_followup" style="font-family: var(--font-ui); font-size: 0.8rem; letter-spacing: 0.05em; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                            I would like Joe Finch or the gallery team to follow up with me
+                        </label>
+                    </div>
+
+                    <div class="text-center" style="margin-top: 2rem;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Connect</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Success State -->
+            <div id="signup-success-state" class="signup-success" style="display: none;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <h2>Thank You</h2>
+                <p>“We will remember you.”</p>
+                <div style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); letter-spacing: 0.05em; margin-bottom: 2rem;">
+                    Your interest has been elegantly recorded.
+                </div>
+                <button id="btn-reset-form" class="btn btn-secondary">Submit another entry</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/floating_background.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/signup.js') }}"></script>
+</body>
+</html>
