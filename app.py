@@ -284,6 +284,15 @@ def create_collector():
         source=source
     )
     
+    # Auto-backup to Google Sheets if configured
+    try:
+        collector = database.get_collector_by_id(new_id)
+        if collector:
+            import backup
+            backup.sync_collector_to_sheet(collector)
+    except Exception as e:
+        app.logger.error(f"Google Sheet backup failed: {e}")
+    
     return jsonify({'success': True, 'id': new_id}), 201
 
 @app.route('/api/collectors/<int:collector_id>', methods=['PUT', 'PATCH'])
