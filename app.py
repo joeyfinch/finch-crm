@@ -373,6 +373,47 @@ def export_csv():
     output.headers["Content-type"] = "text/csv"
     return output
 
+@app.route('/api/debug-backup')
+def debug_backup():
+    sheet_id = os.environ.get('GOOGLE_SHEET_ID')
+    credentials_json = os.environ.get('GOOGLE_SERVICE_ACCOUNT_JSON')
+    
+    debug_info = {
+        'sheet_id_configured': bool(sheet_id),
+        'sheet_id_val': sheet_id[:5] + '...' if sheet_id else None,
+        'credentials_configured': bool(credentials_json),
+    }
+    
+    if credentials_json:
+        try:
+            import json
+            info = json.loads(credentials_json)
+            debug_info['credentials_valid_json'] = True
+            debug_info['client_email'] = info.get('client_email')
+            debug_info['project_id'] = info.get('project_id')
+        except Exception as e:
+            debug_info['credentials_valid_json'] = False
+            debug_info['json_error'] = str(e)
+            
+    try:
+        import backup
+        creds = backup.get_google_credentials()
+        if creds:
+            from googleapiclient.discovery import build
+            service = build('sheets', 'v4', credentials=creds)
+            sheets_client = service.spreadsheets()
+            if sheet_id:
+                sheets_client.get(spreadsheetId=sheet_id).execute()
+                debug_info['sheets_api_connection'] = 'Success! Connection and permissions verified.'
+            else:
+                debug_info['sheets_api_connection'] = 'Skipped: Sheet ID not set.'
+        else:
+            debug_info['sheets_api_connection'] = 'Failed: Could not load credentials.'
+    except Exception as e:
+        debug_info['sheets_api_connection'] = f'Failed: {e}'
+        
+    return jsonify(debug_info)
+
 if __name__ == '__main__':
     # Listen on all interfaces so other devices can access via Wi-Fi/local network
     port = int(os.environ.get('PORT', 5001))
